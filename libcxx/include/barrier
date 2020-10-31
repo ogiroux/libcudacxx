@@ -342,15 +342,31 @@ public:
     bool __try_wait(arrival_token __old) const
     {
         uint64_t __current = __phase_arrived_expected.load(memory_order_acquire);
+#if defined(STRATEGY_4)
         __make_phase_consistent(__current);
-        return (__current & __phase_bit) != (__old & __phase_bit);
+#endif
+        if((__current & __phase_bit) != (__old & __phase_bit))
+            return true;
+#if defined(STRATEGY_2) 
+        __make_phase_consistent(__current);
+#endif
+        return false;
     }
 
     _LIBCUDACXX_NODISCARD_ATTRIBUTE inline _LIBCUDACXX_INLINE_VISIBILITY
     arrival_token arrive(ptrdiff_t __update = 1)
     {
         auto const __inc = __arrived_unit * __update;
-        return __phase_arrived_expected.fetch_add(__inc, memory_order_acq_rel);
+        auto const __old = __phase_arrived_expected.fetch_add(__inc, memory_order_acq_rel);
+#if (!defined(STRATEGY_2) && !defined(STRATEGY_3) && !defined(STRATEGY_4)) || defined(STRATEGY_1) 
+        if((__old ^ (__old + __inc)) & __phase_bit) {
+            __phase_arrived_expected.fetch_add((__old & __expected_mask) << 32, memory_order_relaxed);
+            __phase_arrived_expected.notify_all();
+        }
+#elif defined(STRATEGY_3)
+        __make_phase_consistent(__old + __inc);
+#endif
+        return __old;
     }
     inline _LIBCUDACXX_INLINE_VISIBILITY
     void wait(arrival_token&& __old) const
@@ -365,7 +381,9 @@ public:
     inline _LIBCUDACXX_INLINE_VISIBILITY
     void arrive_and_drop()
     {
+#if defined(STRATEGY_2) || defined(STRATEGY_3) || defined(STRATEGY_4)
         __make_phase_consistent(__phase_arrived_expected.load(memory_order_relaxed));
+#endif
         __phase_arrived_expected.fetch_add(__expected_unit, memory_order_relaxed);
         (void)arrive();
     }
