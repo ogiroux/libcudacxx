@@ -34,3 +34,11 @@ build/
 .p4config
 compare_git_to_perforce.bash
 *.log
+samples/benchmark.exe
+samples/benchmark.exp
+samples/benchmark.lib
+samples/benchmark.pdb
+samples/test.exe
+samples/test.exp
+samples/test.lib
+samples/vc140.pdb
