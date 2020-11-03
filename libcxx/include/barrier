@@ -387,14 +387,14 @@ public:
 
 #ifndef _LIBCUDACXX_HAS_PLATFORM_WAIT
     inline _LIBCUDACXX_INLINE_VISIBILITY
-    friend void __expect_extra_arrive(__barrier_base& __self, uint64_t __inc = __arrived_unit)
+    friend void __expect_extra_arrive(__barrier_base* __self, uint64_t __inc = __arrived_unit)
     {
-        (void)__self.__update_fetch(~__inc + 1, memory_order_relaxed);
+        (void)__self->__update_fetch(~__inc + 1, memory_order_relaxed);
     }
     inline _LIBCUDACXX_INLINE_VISIBILITY
-    friend void __extra_arrive(__barrier_base& __self, uint64_t __inc = __arrived_unit)
+    friend void __extra_arrive(__barrier_base* __self, uint64_t __inc = __arrived_unit)
     {
-        __self.__phase_arrived_expected.fetch_add(__inc, memory_order_release);
+        __self->__phase_arrived_expected.fetch_add(__inc, memory_order_release);
     }
 #endif
 
@@ -427,7 +427,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     static constexpr ptrdiff_t max() noexcept
     {
-        return numeric_limits<int32_t>::max();
+        return numeric_limits<int32_t>::max() >> 1;
     }
 
     inline _LIBCUDACXX_INLINE_VISIBILITY
