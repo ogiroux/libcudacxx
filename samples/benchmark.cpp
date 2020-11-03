@@ -436,13 +436,16 @@ void test_barrier(std::string const& name, bool use_omp = false) {
     test_loop(scope_of_barrier<B>::scope, [&](std::pair<int, std::string> c) {
         B* b = make_<B>(c.first);
         auto f = [=] _ABI (int)  -> int {
-            int i = 1;
+            int i = 0;
             auto const end = cuda::std::chrono::high_resolution_clock::now() + cuda::std::chrono::seconds(1);
             while(end > cuda::std::chrono::high_resolution_clock::now()) {
                 b->arrive_and_wait();
+//                (void)b->arrive();
+  //              wait_for_parity(b, i & 1);
                 ++i;
             }
             b->arrive_and_drop();
+            ++i;
             return i;
         };
         test(name + ": " + c.second, c.first, f, use_omp, true, scope_of_barrier<B>::scope);
